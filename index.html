@@ -96,28 +96,69 @@
           setDateFilter(today);
         }
 
-        async function loadData() {
-          setLoading(true);
-          const response = await fetch(CSV_URL);
-          const csvText = await response.text();
+async function loadData() {
 
-          const result = Papa.parse(csvText, {
-            header: true,
-            skipEmptyLines: true,
-          });
+  setLoading(true);
 
-          setData(result.data);
+  const response =
+    await fetch(CSV_URL);
 
-          const today = new Date().toISOString().split("T")[0];
-          setDateFilter(today);
+  const csvText =
+    await response.text();
 
-          const filteredToday = result.data.filter(
-            (item) => item["วันที่จอง"] === today,
-          );
+  const result = Papa.parse(csvText, {
+    header: true,
+    skipEmptyLines: true,
+  });
 
-          setFilteredData(filteredToday);
-          setLoading(false);
-        }
+  const sortedData =
+    [...result.data].sort((a, b) => {
+
+      const dateA =
+        a["วันที่จอง"] || "";
+
+      const dateB =
+        b["วันที่จอง"] || "";
+
+      if (dateA !== dateB) {
+
+        return dateA.localeCompare(dateB);
+
+      }
+
+      const timeA =
+        a["ช่วงเวลา"] || "";
+
+      const timeB =
+        b["ช่วงเวลา"] || "";
+
+      return timeA.localeCompare(timeB);
+
+    });
+
+  setData(sortedData);
+
+  const today =
+    new Date()
+      .toISOString()
+      .split("T")[0];
+
+  setDateFilter(today);
+
+  const filteredToday =
+    sortedData.filter(
+      item =>
+        item["วันที่จอง"] === today
+    );
+
+  setFilteredData(filteredToday);
+
+  setLoading(false);
+
+}
+
+function formatThaiDate(dateString) { if (!dateString) return ""; const date = new Date(dateString); return date.toLocaleDateString( "th-TH", { day: "numeric", month: "long", year: "numeric", } ); }
+
 
         function applyFilters() {
           let temp = [...data];
@@ -150,17 +191,19 @@
         filteredData.length > 0 ? Object.keys(filteredData[0]) : [];
 
         const headers = [
+          "#",
           "วันที่จอง",
+          "ช่วงเวลา",
           "ชื่อ - นามสกุล",
           "รหัสพนักงาน",
-          "เบอร์โทรศัพท์",
-          "ลักษณะการทำงาน",
-          "E-mail",
+          "เบอร์โทรศัพท์",                 
           "ปัญหาสุขภาพ",
           "ประวัติการรักษา",
+          "E-mail",
           "สถานที่รักษา",
           "เวลาบันทึก",
-          "ช่วงเวลา",
+          "ลักษณะการทำงาน",
+         
         ];
         if (loading) {
           return (
@@ -228,28 +271,45 @@
                 spacing={2}
                 mb={3}
               >
-                <Box
-                  sx={{
-                    width: {
-                      xs: "100%",
+           
+<Box
+  sx={{
+    width: {
+      xs: "100%",
+      sm: 240,
+    },
+  }}
+>
 
-                      sm: 220,
-                    },
-                  }}
-                >
-                  <TextField
-                    fullWidth
-                    label="เลือกวันที่"
-                    type="date"
-                    value={dateFilter}
-                    onChange={(e) => {
-                      setDateFilter(e.target.value);
-                    }}
-                    InputLabelProps={{
-                      shrink: true,
-                    }}
-                  />
-                </Box>
+  <Typography
+    variant="caption"
+    sx={{
+      mb: 0.5,
+      display: "block",
+      opacity: 0.7,
+    }}
+  >
+    วันที่:
+    {" "}
+    {formatThaiDate(dateFilter)}
+  </Typography>
+
+  <TextField
+    fullWidth
+    type="date"
+
+    value={dateFilter}
+
+    onChange={(e) => {
+      setDateFilter(
+        e.target.value
+      );
+    }}
+  />
+
+</Box>
+
+
 
                 <datalist id="available-dates">
                   {uniqueDates.map((date) => (
@@ -300,7 +360,7 @@
                               whiteSpace: "nowrap",
                             }}
                           >
-                            {row[header]}
+                            {header === "#" ? index + 1 : row[header]}
                           </TableCell>
                         ))}
                       </TableRow>
