@@ -6,13 +6,12 @@
 
     <title>ระบบจองคิวคลินิกกายภาพบำบัด</title>
     <!-- MUI X Date Picker -->
-
-       <script src="https://unpkg.com/dayjs/dayjs.min.js"></script>
+    <script src="https://unpkg.com/dayjs/dayjs.min.js"></script>
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/react-day-picker@8.10.1/dist/style.css"
     />
-
+<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
 
 <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
@@ -24,11 +23,9 @@
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
     <style>
-      body {
-        margin: 0;
-        background: #f5f5f5;
-        font-family: Arial, sans-serif;
-      }
+* {
+  font-family: "Anuphan", sans-serif !important;
+}
     </style>
   </head>
 
@@ -55,6 +52,7 @@
         TextField,
         Button,
         CircularProgress,
+        Skeleton
       } = MaterialUI;
 
       const CSV_URL =
@@ -149,6 +147,16 @@ async function loadData() {
 
 }
 
+function changeDate(days) {
+  const current = new Date(dateFilter);
+
+  current.setDate(current.getDate() + days);
+
+  const newDate = current.toISOString().split("T")[0];
+
+  setDateFilter(newDate);
+}
+
 function formatThaiDate(dateString) { if (!dateString) return ""; const date = new Date(dateString); return date.toLocaleDateString( "th-TH", { day: "numeric", month: "long", year: "numeric", } ); }
 
 
@@ -197,18 +205,7 @@ function formatThaiDate(dateString) { if (!dateString) return ""; const date = n
           "ลักษณะการทำงาน",
          
         ];
-        if (loading) {
-          return (
-            <Box
-              display="flex"
-              justifyContent="center"
-              alignItems="center"
-              height="100vh"
-            >
-              <CircularProgress />
-            </Box>
-          );
-        }
+
 
         return (
           <Container
@@ -228,32 +225,52 @@ function formatThaiDate(dateString) { if (!dateString) return ""; const date = n
               }}
             >
               <Box
-                display="flex"
-                justifyContent="space-between"
-                alignItems="center"
-                mb={3}
-              >
-                <Typography variant="h5" fontWeight="bold">
-                  รายการจอง
-                </Typography>
+  display="flex"
+  justifyContent="space-between"
+  alignItems="center"
+  mb={3}
+>
+  <Typography variant="h5" fontWeight="bold">
+    รายการจอง
+  </Typography>
 
-                <Button
-                  variant="contained"
-                  onClick={selectToday}
-                  startIcon={
-                    <img
-                      src="https://media.tenor.com/oevF9HLc-acAAAAi/gato.gif"
-                      width="20"
-                      height="20"
-                      style={{
-                        imageRendering: "pixelated",
-                      }}
-                    />
-                  }
-                >
-                  วันนี้
-                </Button>
-              </Box>
+ <Stack direction="row" spacing={1}>
+  <Button
+    size="small"
+    variant="outlined"
+    onClick={() => changeDate(-1)}
+    sx={{
+      minWidth: 36,
+      px: 1,
+    }}
+  >
+    ◀
+  </Button>
+
+  <Button
+    size="small"
+    variant="contained"
+    onClick={selectToday}
+    sx={{
+      px: 1.5,
+    }}
+  >
+    วันนี้
+  </Button>
+
+  <Button
+    size="small"
+    variant="outlined"
+    onClick={() => changeDate(1)}
+    sx={{
+      minWidth: 36,
+      px: 1,
+    }}
+  >
+    ▶
+  </Button>
+</Stack>
+</Box>
 
               <Stack
                 direction={{
@@ -343,21 +360,39 @@ function formatThaiDate(dateString) { if (!dateString) return ""; const date = n
                   </TableHead>
 
                   <TableBody>
-                    {filteredData.map((row, index) => (
-                      <TableRow key={index}>
-                        {headers.map((header) => (
-                          <TableCell
-                            key={header}
-                            sx={{
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {header === "#" ? index + 1 : row[header]}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
-                  </TableBody>
+  {loading
+    ? Array.from({ length: 8 }).map((_, i) => (
+        <TableRow key={i}>
+          {headers.map((h) => (
+            <TableCell
+              key={h}
+              sx={{
+                py: 0.75,
+              }}
+            >
+              <Skeleton
+                variant="text"
+                height={20}
+              />
+            </TableCell>
+          ))}
+        </TableRow>
+      ))
+    : filteredData.map((row, index) => (
+        <TableRow key={index}>
+          {headers.map((header) => (
+            <TableCell
+              key={header}
+              sx={{
+                whiteSpace: "nowrap",
+              }}
+            >
+              {header === "#" ? index + 1 : row[header]}
+            </TableCell>
+          ))}
+        </TableRow>
+      ))}
+</TableBody>
                 </Table>
               </TableContainer>
             </Paper>
