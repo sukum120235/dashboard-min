@@ -11,21 +11,24 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/react-day-picker@8.10.1/dist/style.css"
     />
-<link href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
 
-<script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
 
-<script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
 
-<script src="https://unpkg.com/@mui/material@5.15.20/umd/material-ui.production.min.js"></script>
+    <script src="https://unpkg.com/@mui/material@5.15.20/umd/material-ui.production.min.js"></script>
     <!-- Papa Parse -->
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 
     <style>
-* {
-  font-family: "Anuphan", sans-serif !important;
-}
+      * {
+        font-family: "Anuphan", sans-serif !important;
+      }
     </style>
   </head>
 
@@ -52,7 +55,7 @@
         TextField,
         Button,
         CircularProgress,
-        Skeleton
+        Skeleton,
       } = MaterialUI;
 
       const CSV_URL =
@@ -86,79 +89,68 @@
           setDateFilter(today);
         }
 
-async function loadData() {
+        async function loadData() {
+          setLoading(true);
 
-  setLoading(true);
+          const response = await fetch(CSV_URL);
 
-  const response =
-    await fetch(CSV_URL);
+          const csvText = await response.text();
 
-  const csvText =
-    await response.text();
+          const result = Papa.parse(csvText, {
+            header: true,
+            skipEmptyLines: true,
+          });
 
-  const result = Papa.parse(csvText, {
-    header: true,
-    skipEmptyLines: true,
-  });
+          const sortedData = [...result.data].sort((a, b) => {
+            const dateA = a["วันที่จอง"] || "";
 
-  const sortedData =
-    [...result.data].sort((a, b) => {
+            const dateB = b["วันที่จอง"] || "";
 
-      const dateA =
-        a["วันที่จอง"] || "";
+            if (dateA !== dateB) {
+              return dateA.localeCompare(dateB);
+            }
 
-      const dateB =
-        b["วันที่จอง"] || "";
+            const timeA = a["ช่วงเวลา"] || "";
 
-      if (dateA !== dateB) {
+            const timeB = b["ช่วงเวลา"] || "";
 
-        return dateA.localeCompare(dateB);
+            return timeA.localeCompare(timeB);
+          });
 
-      }
+          setData(sortedData);
 
-      const timeA =
-        a["ช่วงเวลา"] || "";
+          const today = new Date().toISOString().split("T")[0];
 
-      const timeB =
-        b["ช่วงเวลา"] || "";
+          setDateFilter(today);
 
-      return timeA.localeCompare(timeB);
+          const filteredToday = sortedData.filter(
+            (item) => item["วันที่จอง"] === today,
+          );
 
-    });
+          setFilteredData(filteredToday);
 
-  setData(sortedData);
+          setLoading(false);
+        }
 
-  const today =
-    new Date()
-      .toISOString()
-      .split("T")[0];
+        function changeDate(days) {
+          const current = new Date(dateFilter);
 
-  setDateFilter(today);
+          current.setDate(current.getDate() + days);
 
-  const filteredToday =
-    sortedData.filter(
-      item =>
-        item["วันที่จอง"] === today
-    );
+          const newDate = current.toISOString().split("T")[0];
 
-  setFilteredData(filteredToday);
+          setDateFilter(newDate);
+        }
 
-  setLoading(false);
-
-}
-
-function changeDate(days) {
-  const current = new Date(dateFilter);
-
-  current.setDate(current.getDate() + days);
-
-  const newDate = current.toISOString().split("T")[0];
-
-  setDateFilter(newDate);
-}
-
-function formatThaiDate(dateString) { if (!dateString) return ""; const date = new Date(dateString); return date.toLocaleDateString( "th-TH", { day: "numeric", month: "long", year: "numeric", } ); }
-
+        function formatThaiDate(dateString) {
+          if (!dateString) return "";
+          const date = new Date(dateString);
+          return date.toLocaleDateString("th-TH", {
+            day: "numeric",
+            month: "long",
+            year: "numeric",
+          });
+        }
 
         // function applyFilters() {
         //   let temp = [...data];
@@ -184,26 +176,24 @@ function formatThaiDate(dateString) { if (!dateString) return ""; const date = n
         // }
 
         function applyFilters() {
-  let temp = [...data];
+          let temp = [...data];
 
-  if (search.trim()) {
-    const keyword = search.toLowerCase();
+          if (search.trim()) {
+            const keyword = search.toLowerCase();
 
-    temp = temp.filter((row) =>
-      Object.values(row).some((value) =>
-        String(value || "")
-          .toLowerCase()
-          .includes(keyword)
-      )
-    );
-  } else if (dateFilter) {
-    temp = temp.filter(
-      (item) => item["วันที่จอง"] === dateFilter
-    );
-  }
+            temp = temp.filter((row) =>
+              Object.values(row).some((value) =>
+                String(value || "")
+                  .toLowerCase()
+                  .includes(keyword),
+              ),
+            );
+          } else if (dateFilter) {
+            temp = temp.filter((item) => item["วันที่จอง"] === dateFilter);
+          }
 
-  setFilteredData(temp);
-}
+          setFilteredData(temp);
+        }
 
         const uniqueDates = [
           ...new Set(data.map((item) => item["วันที่จอง"]).filter(Boolean)),
@@ -218,87 +208,78 @@ function formatThaiDate(dateString) { if (!dateString) return ""; const date = n
           "ช่วงเวลา",
           "ชื่อ - นามสกุล",
           "รหัสพนักงาน",
-          "เบอร์โทรศัพท์",                 
+          "เบอร์โทรศัพท์",
           "ปัญหาสุขภาพ",
           "ประวัติการรักษา",
           "E-mail",
           "สถานที่รักษา",
           "เวลาบันทึก",
           "ลักษณะการทำงาน",
-         
         ];
 
-const validRows = filteredData.filter((row) => {
-  const time = row["ช่วงเวลา"]?.trim() || "";
+        const validRows = filteredData.filter((row) => {
+          const time = row["ช่วงเวลา"]?.trim() || "";
 
-  return /^\d{2}:\d{2}\s*-\s*\d{2}:\d{2}$/.test(time);
-});
+          return /^\d{2}:\d{2}\s*-\s*\d{2}:\d{2}$/.test(time);
+        });
 
-const cancelledRows = filteredData.filter((row) => {
-  const time = row["ช่วงเวลา"]?.trim() || "";
+        const cancelledRows = filteredData.filter((row) => {
+          const time = row["ช่วงเวลา"]?.trim() || "";
 
-  return !/^\d{2}:\d{2}\s*-\s*\d{2}:\d{2}$/.test(time);
-});
+          return !/^\d{2}:\d{2}\s*-\s*\d{2}:\d{2}$/.test(time);
+        });
 
-const displaySlots = generateSlots(validRows);
+        const displaySlots = generateSlots(validRows);
 
-const displayData =
-  search.trim()
-    ? filteredData
-    : [
-        ...generateSlots(validRows),
-        ...cancelledRows
-      ];
+        const displayData = search.trim()
+          ? filteredData
+          : [...generateSlots(validRows), ...cancelledRows];
         function generateSlots(rows) {
-  const slots = [];
+          const slots = [];
 
- let endTime;
+          let endTime;
 
-if (rows.length === 0) {
-  endTime = "16:00";
-} else {
-  endTime = rows.reduce((latest, row) => {
-    const end = row["ช่วงเวลา"].split("-")[1].trim();
-    return end > latest ? end : latest;
-  }, "08:00");
-}
+          if (rows.length === 0) {
+            endTime = "16:00";
+          } else {
+            endTime = rows.reduce((latest, row) => {
+              const end = row["ช่วงเวลา"].split("-")[1].trim();
+              return end > latest ? end : latest;
+            }, "08:00");
+          }
 
-  let current = dayjs("2000-01-01 08:00");
-  const end = dayjs(`2000-01-01 ${endTime}`);
+          let current = dayjs("2000-01-01 08:00");
+          const end = dayjs(`2000-01-01 ${endTime}`);
 
-  while (current.isBefore(end)) {
-    const next = current.add(30, "minute");
+          while (current.isBefore(end)) {
+            const next = current.add(30, "minute");
 
-    const slotText =
-      `${current.format("HH:mm")} - ${next.format("HH:mm")}`;
+            const slotText = `${current.format("HH:mm")} - ${next.format("HH:mm")}`;
 
-    const booking = rows.find(
-      (r) => r["ช่วงเวลา"] === slotText
-    );
+            const booking = rows.find((r) => r["ช่วงเวลา"] === slotText);
 
-    slots.push(
-      booking || {
-        "#": "",
-        "วันที่จอง": dateFilter,
-        "ช่วงเวลา": slotText,
-        "ชื่อ - นามสกุล": "-",
-        "รหัสพนักงาน": "-",
-        "เบอร์โทรศัพท์": "-",
-        "ปัญหาสุขภาพ": "-",
-        "ประวัติการรักษา": "-",
-        "E-mail": "-",
-        "สถานที่รักษา": "-",
-        "เวลาบันทึก": "-",
-        "ลักษณะการทำงาน": "-"
-      }
-    );
+            slots.push(
+              booking || {
+                "#": "",
+                วันที่จอง: dateFilter,
+                ช่วงเวลา: slotText,
+                "ชื่อ - นามสกุล": "-",
+                รหัสพนักงาน: "-",
+                เบอร์โทรศัพท์: "-",
+                ปัญหาสุขภาพ: "-",
+                ประวัติการรักษา: "-",
+                "E-mail": "-",
+                สถานที่รักษา: "-",
+                เวลาบันทึก: "-",
+                ลักษณะการทำงาน: "-",
+              },
+            );
 
-    current = next;
-  }
+            current = next;
+          }
 
-  return slots;
-}
-
+          return slots;
+        }
 
         return (
           <Container
@@ -318,52 +299,52 @@ if (rows.length === 0) {
               }}
             >
               <Box
-  display="flex"
-  justifyContent="space-between"
-  alignItems="center"
-  mb={2}
->
-  <Typography variant="h5" fontWeight="bold">
-    รายการจอง
-  </Typography>
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                mb={2}
+              >
+                <Typography variant="h5" fontWeight="bold">
+                  รายการจอง
+                </Typography>
 
- <Stack direction="row" spacing={1}>
-  <Button
-    size="small"
-    variant="outlined"
-    onClick={() => changeDate(-1)}
-    sx={{
-      minWidth: 36,
-      px: 1,
-    }}
-  >
-    ◀
-  </Button>
+                <Stack direction="row" spacing={1}>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => changeDate(-1)}
+                    sx={{
+                      minWidth: 36,
+                      px: 1,
+                    }}
+                  >
+                    ◀
+                  </Button>
 
-  <Button
-    size="small"
-    variant="contained"
-    onClick={selectToday}
-    sx={{
-      px: 1.5,
-    }}
-  >
-    วันนี้
-  </Button>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    onClick={selectToday}
+                    sx={{
+                      px: 1.5,
+                    }}
+                  >
+                    วันนี้
+                  </Button>
 
-  <Button
-    size="small"
-    variant="outlined"
-    onClick={() => changeDate(1)}
-    sx={{
-      minWidth: 36,
-      px: 1,
-    }}
-  >
-    ▶
-  </Button>
-</Stack>
-</Box>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => changeDate(1)}
+                    sx={{
+                      minWidth: 36,
+                      px: 1,
+                    }}
+                  >
+                    ▶
+                  </Button>
+                </Stack>
+              </Box>
 
               <Stack
                 direction={{
@@ -373,51 +354,36 @@ if (rows.length === 0) {
                 spacing={2}
                 mb={3}
               >
-           
-<Box
-  sx={{
-    width: {
-      xs: "100%",
-      sm: 240,
-    },
-  }}
->
+                <Box
+                  sx={{
+                    width: {
+                      xs: "100%",
+                      sm: 240,
+                    },
+                  }}
+                >
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      mb: 0.5,
+                      display: "block",
+                      opacity: 0.7,
+                    }}
+                  >
+                    วันที่: {formatThaiDate(dateFilter)}
+                  </Typography>
 
-  <Typography
-    variant="caption"
-    sx={{
-      mb: 0.5,
-      display: "block",
-      opacity: 0.7,
-    }}
-  >
-    วันที่:
-    {" "}
-    {formatThaiDate(dateFilter)}
-  </Typography>
-
-  <TextField
-    fullWidth
-    type="date"
-
-    value={dateFilter}
-
-    onChange={(e) => {
-      setDateFilter(
-        e.target.value
-      );
-    }}
-  />
-
-</Box>
-
-
-
-                <datalist id="available-dates">
-                  {uniqueDates.map((date) => (
-                    <option key={date} value={date} />
-                  ))}
-                </datalist>
+                  <TextField
+                  fullWidth
+                    type="date"
+                    value={dateFilter}
+                    onChange={(e) => {
+                      setDateFilter(e.target.value);
+                    }}
+                    size="small"
+                    variant="outlined"
+                  />
+                </Box>
 
                 <TextField
                   fullWidth
@@ -426,6 +392,7 @@ if (rows.length === 0) {
                   onChange={(e) => {
                     setSearch(e.target.value);
                   }}
+                  size="small"
                 />
               </Stack>
 
@@ -450,43 +417,49 @@ if (rows.length === 0) {
                         </TableCell>
                       ))}
                     </TableRow>
-                    
                   </TableHead>
 
                   <TableBody>
-  {loading
-    ? Array.from({ length: 8 }).map((_, i) => (
-        <TableRow key={i}>
-          {headers.map((h) => (
-            <TableCell
-              key={h}
-              sx={{
-                py: 0.75,
-              }}
-            >
-              <Skeleton
-                variant="text"
-                height={20}
-              />
-            </TableCell>
-          ))}
-        </TableRow>
-      ))
-    : displayData.map((row, index) => (
-        <TableRow key={index}>
-          {headers.map((header) => (
-            <TableCell
-              key={header}
-              sx={{
-                whiteSpace: "nowrap",
-              }}
-            >
-              {header === "#" ? index + 1 : row[header]}
-            </TableCell>
-          ))}
-        </TableRow>
-      ))}
-</TableBody>
+                    {loading
+                      ? Array.from({ length: 8 }).map((_, i) => (
+                          <TableRow key={i}>
+                            {headers.map((h) => (
+                              <TableCell
+                                key={h}
+                                sx={{
+                                  py: 0.75,
+                                }}
+                              >
+                                <Skeleton variant="text" height={20} />
+                              </TableCell>
+                            ))}
+                          </TableRow>
+                        ))
+                      : displayData.map((row, index) => (
+                           <TableRow
+  key={index}
+  sx={{
+    backgroundColor:
+      row["ชื่อ - นามสกุล"] === "-"
+        ? "#e8f5e9"
+        : row["ช่วงเวลา"] === "ยกเลิกแล้ว"
+          ? "#ffebee"
+          : "inherit"
+  }}
+>
+                            {headers.map((header) => (
+                              <TableCell
+                                key={header}
+                                sx={{
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {header === "#" ? index + 1 : row[header]}
+                              </TableCell>
+                            ))}
+                          </TableRow>
+                        ))}
+                  </TableBody>
                 </Table>
               </TableContainer>
             </Paper>
