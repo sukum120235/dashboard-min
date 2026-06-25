@@ -252,6 +252,14 @@
           const end = dayjs(`2000-01-01 ${endTime}`);
 
           while (current.isBefore(end)) {
+       
+  if (
+    current.format("HH:mm") >= "12:00" &&
+    current.format("HH:mm") < "13:00"
+  ) {
+    current = dayjs("2000-01-01 13:00");
+    continue;
+  }
             const next = current.add(30, "minute");
 
             const slotText = `${current.format("HH:mm")} - ${next.format("HH:mm")}`;
