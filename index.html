@@ -160,28 +160,50 @@ function changeDate(days) {
 function formatThaiDate(dateString) { if (!dateString) return ""; const date = new Date(dateString); return date.toLocaleDateString( "th-TH", { day: "numeric", month: "long", year: "numeric", } ); }
 
 
+        // function applyFilters() {
+        //   let temp = [...data];
+
+        //   if (dateFilter) {
+        //     temp = temp.filter((item) => item["วันที่จอง"] === dateFilter);
+        //   }
+
+        //   if (search) {
+        //     const keyword = search.toLowerCase();
+
+        //     temp = temp.filter((row) => {
+        //       return Object.values(row).some((value) =>
+        //         String(value || "")
+        //           .toLowerCase()
+
+        //           .includes(keyword),
+        //       );
+        //     });
+        //   }
+
+        //   setFilteredData(temp);
+        // }
+
         function applyFilters() {
-          let temp = [...data];
+  let temp = [...data];
 
-          if (dateFilter) {
-            temp = temp.filter((item) => item["วันที่จอง"] === dateFilter);
-          }
+  if (search.trim()) {
+    const keyword = search.toLowerCase();
 
-          if (search) {
-            const keyword = search.toLowerCase();
+    temp = temp.filter((row) =>
+      Object.values(row).some((value) =>
+        String(value || "")
+          .toLowerCase()
+          .includes(keyword)
+      )
+    );
+  } else if (dateFilter) {
+    temp = temp.filter(
+      (item) => item["วันที่จอง"] === dateFilter
+    );
+  }
 
-            temp = temp.filter((row) => {
-              return Object.values(row).some((value) =>
-                String(value || "")
-                  .toLowerCase()
-
-                  .includes(keyword),
-              );
-            });
-          }
-
-          setFilteredData(temp);
-        }
+  setFilteredData(temp);
+}
 
         const uniqueDates = [
           ...new Set(data.map((item) => item["วันที่จอง"]).filter(Boolean)),
@@ -206,12 +228,83 @@ function formatThaiDate(dateString) { if (!dateString) return ""; const date = n
          
         ];
 
+const validRows = filteredData.filter((row) => {
+  const time = row["ช่วงเวลา"]?.trim() || "";
+
+  return /^\d{2}:\d{2}\s*-\s*\d{2}:\d{2}$/.test(time);
+});
+
+const cancelledRows = filteredData.filter((row) => {
+  const time = row["ช่วงเวลา"]?.trim() || "";
+
+  return !/^\d{2}:\d{2}\s*-\s*\d{2}:\d{2}$/.test(time);
+});
+
+const displaySlots = generateSlots(validRows);
+
+const displayData =
+  search.trim()
+    ? filteredData
+    : [
+        ...generateSlots(validRows),
+        ...cancelledRows
+      ];
+        function generateSlots(rows) {
+  const slots = [];
+
+ let endTime;
+
+if (rows.length === 0) {
+  endTime = "16:00";
+} else {
+  endTime = rows.reduce((latest, row) => {
+    const end = row["ช่วงเวลา"].split("-")[1].trim();
+    return end > latest ? end : latest;
+  }, "08:00");
+}
+
+  let current = dayjs("2000-01-01 08:00");
+  const end = dayjs(`2000-01-01 ${endTime}`);
+
+  while (current.isBefore(end)) {
+    const next = current.add(30, "minute");
+
+    const slotText =
+      `${current.format("HH:mm")} - ${next.format("HH:mm")}`;
+
+    const booking = rows.find(
+      (r) => r["ช่วงเวลา"] === slotText
+    );
+
+    slots.push(
+      booking || {
+        "#": "",
+        "วันที่จอง": dateFilter,
+        "ช่วงเวลา": slotText,
+        "ชื่อ - นามสกุล": "-",
+        "รหัสพนักงาน": "-",
+        "เบอร์โทรศัพท์": "-",
+        "ปัญหาสุขภาพ": "-",
+        "ประวัติการรักษา": "-",
+        "E-mail": "-",
+        "สถานที่รักษา": "-",
+        "เวลาบันทึก": "-",
+        "ลักษณะการทำงาน": "-"
+      }
+    );
+
+    current = next;
+  }
+
+  return slots;
+}
+
 
         return (
           <Container
             maxWidth="xl"
             sx={{
-              p: 2,
+              p: 1,
             }}
           >
             <Paper
@@ -228,7 +321,7 @@ function formatThaiDate(dateString) { if (!dateString) return ""; const date = n
   display="flex"
   justifyContent="space-between"
   alignItems="center"
-  mb={3}
+  mb={2}
 >
   <Typography variant="h5" fontWeight="bold">
     รายการจอง
@@ -357,6 +450,7 @@ function formatThaiDate(dateString) { if (!dateString) return ""; const date = n
                         </TableCell>
                       ))}
                     </TableRow>
+                    
                   </TableHead>
 
                   <TableBody>
@@ -378,7 +472,7 @@ function formatThaiDate(dateString) { if (!dateString) return ""; const date = n
           ))}
         </TableRow>
       ))
-    : filteredData.map((row, index) => (
+    : displayData.map((row, index) => (
         <TableRow key={index}>
           {headers.map((header) => (
             <TableCell
